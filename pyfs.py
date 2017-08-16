@@ -128,7 +128,7 @@ class Memory(LoggingMixIn, Operations):
         self.fd += 1
         return self.fd
 
-    def getattr(self, path, fh=None):
+    def orig_getattr(self, path, fh=None):
         if path == self.FS_XML:
             self._root.update()
             self[self.FS_XML].attrib['st_size'] = len(str(self._root))
@@ -137,6 +137,19 @@ class Memory(LoggingMixIn, Operations):
             raise FuseOSError(ENOENT)
         print('GETATTR {0} returns {1} {2}'.format(path, elem, elem.attrib))
         return elem.attrib
+
+    def getattr(self, path, fh=None):
+        if path == self.FS_XML:
+            self._root.update()
+            self[self.FS_XML].attrib['st_size'] = len(str(self._root))
+        elem = self._root.find(path)
+        if elem is None:
+            raise FuseOSError(ENOENT)
+        print('GETATTR {0} returns {1} {2}'.format(path, elem, elem.attrib))
+        attr = {}
+        for (name, val) in elem.attrib.iteritems():
+            attr[name] = int(val)
+        return attr
 
     def getxattr(self, path, name, position=0):
         attrs = self.getattr(path).get('attrs', {})
